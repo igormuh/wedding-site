@@ -1,0 +1,264 @@
+import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { HashRouter } from 'react-router-dom';
+
+/* ================= UTIL (TESTABLE) ================= */
+export function calculateTimeLeft(targetDateMs, nowMs) {
+  const distance = targetDateMs - nowMs;
+
+  if (distance <= 0) {
+    return {
+      months: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+    };
+  }
+
+  return {
+    months: Math.floor(distance / (1000 * 60 * 60 * 24 * 30)),
+    days: Math.floor((distance / (1000 * 60 * 60 * 24)) % 30),
+    hours: Math.floor((distance / (1000 * 60 * 60)) % 24),
+    minutes: Math.floor((distance / 1000 / 60) % 60),
+    seconds: Math.floor((distance / 1000) % 60),
+  };
+}
+
+/* ================= COMPONENT ================= */
+function WeddingPrototype() {
+  const weddingDate = new Date("2026-07-30T16:00:00").getTime();
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(weddingDate, Date.now()));
+  const containerRef = useRef(null);
+
+  /* ===== TIMER ===== */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft(weddingDate, Date.now()));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [weddingDate]);
+
+  /* ===== HORIZONTAL SCROLL (SEM QUEBRAR VERTICAL GLOBAL) ===== */
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (!containerRef.current) return;
+
+      const el = containerRef.current;
+      const canScrollHorizontal = el.scrollWidth > el.clientWidth;
+
+      if (canScrollHorizontal && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  const sections = [
+    { id: "home", label: "Início" },
+    { id: "wedding", label: "O Casamento" },
+    { id: "story", label: "História" },
+    { id: "gifts", label: "Presentes" },
+    { id: "thanks", label: "Agradecimentos" },
+  ];
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el && containerRef.current) {
+      containerRef.current.scrollTo({
+        left: el.offsetLeft,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const sectionAnimation = {
+    hidden: { opacity: 0, y: 80 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 1.2, ease: "easeOut" },
+    },
+  };
+
+  return (
+    <div className="bg-black text-white h-screen w-screen overflow-hidden">
+      {/* MENU */}
+      <div className="fixed top-0 left-0 w-full z-50 flex justify-center gap-10 py-6 bg-black/40 backdrop-blur">
+        {sections.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => scrollToSection(s.id)}
+            className="text-white/70 hover:text-white text-sm tracking-[0.3em] uppercase transition"
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* HORIZONTAL ROOT */}
+      <div
+        ref={containerRef}
+        className="flex flex-row h-full w-full overflow-x-scroll overflow-y-hidden snap-x snap-mandatory scroll-smooth"
+      >
+        {/* HOME */}
+        <section
+          id="home"
+          className="flex-none w-screen h-screen relative flex items-center justify-center snap-start"
+        >
+          <motion.img
+            src="https://images.wedy.com/eyJidWNrZXQiOiJ3ZWR5LW5leHQiLCJrZXkiOiJ3ZWR5LXYyLU1qQXlOaTB3TVMweE0xUXlNRG8wTkRvek5DNHlNek5hTHpJM09UY3ZNVFUzTXk4ak9UVTRaamd5THpKYU9VRTJNVFl5TG1wd1pXYz0uanBlZyIsImVkaXRzIjp7InJvdGF0ZSI6bnVsbCwicmVzaXplIjp7IndpZHRoIjozODQwLCJoZWlnaHQiOjIxNjAsImZpdCI6ImNvdmVyIn19fQ=="
+            className="absolute w-full h-full object-cover opacity-60"
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 6 }}
+          />
+
+          <motion.div
+            variants={sectionAnimation}
+            initial="hidden"
+            animate="visible"
+            className="relative text-center space-y-6"
+          >
+            <h1 className="text-6xl font-light tracking-[0.45em] uppercase">
+              Giovanna & Gabriel
+            </h1>
+
+            <p className="text-lg tracking-[0.35em]">30.07.2026</p>
+
+            <div className="flex justify-center gap-8 text-xl font-light mt-8">
+              {Object.entries(timeLeft).map(([key, value]) => (
+                <motion.div key={key} className="text-center">
+                  <div className="text-3xl">{value}</div>
+                  <div className="text-xs uppercase tracking-widest opacity-70">
+                    {key}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        {/* O CASAMENTO */}
+        <section
+          id="wedding"
+          className="flex-none w-screen h-screen flex items-center justify-center snap-start"
+        >
+          <motion.div
+            variants={sectionAnimation}
+            initial="hidden"
+            whileInView="visible"
+            className="max-w-2xl text-center space-y-8"
+          >
+            <h2 className="text-4xl tracking-[0.3em] uppercase">O Casamento</h2>
+
+            <div className="space-y-4 text-white/80">
+              <p>📅 30 de Julho de 2026</p>
+              <p>⛪ Cerimônia às 16:00</p>
+              <p>📍 Espaço de Eventos Exemplo</p>
+              <p>📌 São Paulo - SP</p>
+            </div>
+
+            <a
+              href="https://maps.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block border border-white px-10 py-4 hover:bg-white hover:text-black transition"
+            >
+              ABRIR NO MAPS
+            </a>
+          </motion.div>
+        </section>
+
+        {/* HISTORIA */}
+        <section
+          id="story"
+          className="flex-none w-screen h-screen flex items-center justify-center snap-start"
+        >
+          <motion.div
+            variants={sectionAnimation}
+            initial="hidden"
+            whileInView="visible"
+            className="max-w-2xl text-center space-y-6"
+          >
+            <h2 className="text-4xl tracking-[0.3em] uppercase">Nossa História</h2>
+            <p className="text-white/80">
+              Duas histórias que Deus decidiu unir no tempo perfeito.
+            </p>
+          </motion.div>
+        </section>
+
+        {/* LISTA */}
+        <section
+          id="gifts"
+          className="flex-none w-screen h-screen flex items-center justify-center snap-start"
+        >
+          <motion.div className="text-center space-y-10">
+            <h2 className="text-4xl tracking-[0.3em] uppercase">
+              Lista de Presentes
+            </h2>
+
+            <a
+              href="https://m.querodecasamento.com.br/lista-de-casamento/themelos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block border border-white px-12 py-5 hover:bg-white hover:text-black transition text-lg"
+            >
+              ACESSAR LISTA OFICIAL
+            </a>
+          </motion.div>
+        </section>
+
+        {/* AGRADECIMENTOS */}
+        <section
+          id="thanks"
+          className="flex-none w-screen h-screen flex items-center justify-center snap-start"
+        >
+          <motion.div
+            variants={sectionAnimation}
+            initial="hidden"
+            whileInView="visible"
+            className="max-w-2xl text-center space-y-6"
+          >
+            <h2 className="text-4xl tracking-[0.3em] uppercase">Agradecimentos</h2>
+            <p className="text-white/80">
+              Somos profundamente gratos por ter cada um de vocês fazendo parte
+              desse momento tão importante das nossas vidas.
+            </p>
+          </motion.div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/* ================= EXPORT COM HASHROUTER ================= */
+export default function App() {
+  return (
+    <HashRouter>
+      <WeddingPrototype />
+    </HashRouter>
+  );
+}
+
+/* ================= TEST CASES ================= */
+/* Example Jest Tests
+
+describe('calculateTimeLeft', () => {
+  const base = new Date('2026-07-30T16:00:00').getTime();
+
+  test('returns zero when past date', () => {
+    const result = calculateTimeLeft(base, base + 1000);
+    expect(result.seconds).toBe(0);
+  });
+
+  test('returns positive values when future date', () => {
+    const result = calculateTimeLeft(base, base - 60000);
+    expect(result.minutes).toBeGreaterThanOrEqual(0);
+  });
+});
+*/
